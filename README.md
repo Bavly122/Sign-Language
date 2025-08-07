@@ -1,11 +1,11 @@
 # Sign-Language
 ## Team Roles:
-  ### UI/UX: 
-            Sherry Magdy
-  ### Flutter: 
-            Andrew Maged
-  ### Backend:
-            Bavly Adel
-  ### AI:   
+  ### AI:
             Ahmed Wael
             Bavely Emad
+  ### Backend:
+            Bavly Adel
+  ### Flutter:
+            Andrew Maged
+  ### UI/UX:
+            Sherry Magdy
