@@ -1,0 +1,6 @@
+@EnTouch.API_HostAddress = http://localhost:5106
+
+GET {{EnTouch.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
