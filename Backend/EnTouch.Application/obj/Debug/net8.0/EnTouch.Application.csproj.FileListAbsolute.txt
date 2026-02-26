@@ -1,0 +1,17 @@
+E:\Final_Project\EnTouch\EnTouch.Application\bin\Debug\net8.0\EnTouch.Application.deps.json
+E:\Final_Project\EnTouch\EnTouch.Application\bin\Debug\net8.0\EnTouch.Application.runtimeconfig.json
+E:\Final_Project\EnTouch\EnTouch.Application\bin\Debug\net8.0\EnTouch.Application.dll
+E:\Final_Project\EnTouch\EnTouch.Application\bin\Debug\net8.0\EnTouch.Application.pdb
+E:\Final_Project\EnTouch\EnTouch.Application\bin\Debug\net8.0\EnTouch.Domain.dll
+E:\Final_Project\EnTouch\EnTouch.Application\bin\Debug\net8.0\EnTouch.Domain.pdb
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\EnTouch.Application.csproj.AssemblyReference.cache
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\EnTouch.Application.GeneratedMSBuildEditorConfig.editorconfig
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\EnTouch.Application.AssemblyInfoInputs.cache
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\EnTouch.Application.AssemblyInfo.cs
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\EnTouch.Application.csproj.CoreCompileInputs.cache
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\EnTouch..2388E5A7.Up2Date
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\EnTouch.Application.dll
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\refint\EnTouch.Application.dll
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\EnTouch.Application.pdb
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\EnTouch.Application.genruntimeconfig.cache
+E:\Final_Project\EnTouch\EnTouch.Application\obj\Debug\net8.0\ref\EnTouch.Application.dll
