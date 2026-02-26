@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35919.96 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnTouch.API", "EnTouch.API\EnTouch.API.csproj", "{7E6C0261-EC91-45AC-90B3-FAD22743A275}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnTouch.Domain", "EnTouch.Domain\EnTouch.Domain.csproj", "{14AA3AA9-739B-432F-9DE5-3388C3EBE997}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnTouch.Application", "EnTouch.Application\EnTouch.Application.csproj", "{1E231E46-BA04-4DA6-A827-76119343FEE5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnTouch.Infrastructure", "EnTouch.Infrastructure\EnTouch.Infrastructure.csproj", "{9A11722A-9447-4744-AE38-1F178780B6E7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7E6C0261-EC91-45AC-90B3-FAD22743A275}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E6C0261-EC91-45AC-90B3-FAD22743A275}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E6C0261-EC91-45AC-90B3-FAD22743A275}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E6C0261-EC91-45AC-90B3-FAD22743A275}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14AA3AA9-739B-432F-9DE5-3388C3EBE997}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14AA3AA9-739B-432F-9DE5-3388C3EBE997}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14AA3AA9-739B-432F-9DE5-3388C3EBE997}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14AA3AA9-739B-432F-9DE5-3388C3EBE997}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E231E46-BA04-4DA6-A827-76119343FEE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E231E46-BA04-4DA6-A827-76119343FEE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E231E46-BA04-4DA6-A827-76119343FEE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E231E46-BA04-4DA6-A827-76119343FEE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A11722A-9447-4744-AE38-1F178780B6E7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A11722A-9447-4744-AE38-1F178780B6E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A11722A-9447-4744-AE38-1F178780B6E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A11722A-9447-4744-AE38-1F178780B6E7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1A6738AF-D5A0-4EF9-A79D-CA41358182A4}
+	EndGlobalSection
+EndGlobal
