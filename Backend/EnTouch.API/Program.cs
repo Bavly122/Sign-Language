@@ -1,8 +1,9 @@
-using EnTouch.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using EnTouch.API.Services;
 using EnTouch.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
+using EnTouch.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -22,6 +23,8 @@ namespace EnTouch.API
                 .AddDefaultTokenProviders();
 
             builder.Services.AddControllers();
+            builder.Services.AddSignalR();
+            builder.Services.AddSingleton<OnlineUsersService>();
             builder.Services.AddEndpointsApiExplorer();
 
             builder.Services.AddCors(options =>
@@ -29,9 +32,10 @@ namespace EnTouch.API
                 options.AddPolicy("AllowAll",
                     policy =>
                     {
-                        policy.AllowAnyOrigin()
+                        policy.SetIsOriginAllowed(_ => true)
                               .AllowAnyHeader()
-                              .AllowAnyMethod();
+                              .AllowAnyMethod()
+                              .AllowCredentials();
                     });
             });
 
@@ -83,17 +87,37 @@ namespace EnTouch.API
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(jwtSettings["Key"]))
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            path.StartsWithSegments("/chatHub"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
+
+            builder.Services.AddScoped<IAIService, AIService>();
 
             var app = builder.Build();
 
             app.UseCors("AllowAll");
 
-            if (app.Environment.IsDevelopment())
-            {
+           // if (app.Environment.IsDevelopment())
+           // {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
+           // }
 
             app.UseHttpsRedirection();
 
@@ -101,7 +125,7 @@ namespace EnTouch.API
             app.UseAuthorization();
 
             app.MapControllers();
-
+            app.MapHub<EnTouch.API.Hubs.ChatHub>("/chatHub");
             app.Run();
         }
     }

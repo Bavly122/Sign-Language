@@ -44,7 +44,22 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        return Ok("User created successfully");
+        
+        var token = GenerateJwtToken(user);
+
+        
+        var response = new AuthResponse
+        {
+            Token = token,
+            Id = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            IsDeaf = user.IsDeaf,
+            IsMute = user.IsMute,
+            PreferredLanguage = user.PreferredLanguage
+        };
+
+        return Ok(response);
     }
 
     [HttpPost("login")]
@@ -62,7 +77,18 @@ public class AuthController : ControllerBase
 
         var token = GenerateJwtToken(user);
 
-        return Ok(new { Token = token });
+        var response = new AuthResponse
+        {
+            Token = token,
+            Id = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            IsDeaf = user.IsDeaf,
+            IsMute = user.IsMute,
+            PreferredLanguage = user.PreferredLanguage
+        };
+
+        return Ok(response);
     }
 
     private string GenerateJwtToken(ApplicationUser user)

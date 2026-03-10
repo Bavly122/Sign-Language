@@ -1,4 +1,5 @@
-﻿using EnTouch.Application.DTOs;
+﻿using EnTouch.API.Services;
+using EnTouch.Application.DTOs;
 using EnTouch.Domain.Entities;
 using EnTouch.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -14,10 +15,14 @@ namespace EnTouch.API.Controllers
     public class TranslationController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public TranslationController(ApplicationDbContext context)
+        public TranslationController(
+            ApplicationDbContext context,
+            IServiceScopeFactory scopeFactory)
         {
             _context = context;
+            _scopeFactory = scopeFactory;
         }
 
         [HttpPost("create")]
@@ -32,16 +37,27 @@ namespace EnTouch.API.Controllers
                 Type = dto.Type,
                 InputText = dto.InputText,
                 InputVideoPath = dto.InputVideoPath,
-                Status = TranslationStatus.Pending
+                Status = TranslationStatus.Pending,
+                CreatedAt = DateTime.UtcNow
             };
 
-            _context.Translations.Add(translation);
+            await _context.Translations.AddAsync(translation);
             await _context.SaveChangesAsync();
+
+            var translationId = translation.Id;
+
+            
+            _ = Task.Run(async () =>
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var aiService = scope.ServiceProvider.GetRequiredService<IAIService>();
+                await aiService.ProcessTranslationAsync(translationId);
+            });
 
             return Ok(new
             {
                 translation.Id,
-                translation.Status
+                Status = translation.Status.ToString()
             });
         }
 
@@ -53,6 +69,15 @@ namespace EnTouch.API.Controllers
             var translations = await _context.Translations
                 .Where(t => t.UserId == userId)
                 .OrderByDescending(t => t.CreatedAt)
+                .Select(t => new TranslationResponseDto
+                {
+                    Id = t.Id,
+                    Type = t.Type.ToString(),
+                    InputText = t.InputText,
+                    OutputText = t.OutputText,
+                    Status = t.Status.ToString(),
+                    CreatedAt = t.CreatedAt
+                })
                 .ToListAsync();
 
             return Ok(translations);

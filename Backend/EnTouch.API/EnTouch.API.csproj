@@ -27,4 +27,8 @@
     <ProjectReference Include="..\EnTouch.Infrastructure\EnTouch.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\videos\" />
+  </ItemGroup>
+
 </Project>
