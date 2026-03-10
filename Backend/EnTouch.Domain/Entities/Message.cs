@@ -20,8 +20,12 @@ namespace EnTouch.Domain.Entities
 
         public string Content { get; set; }
 
+        public string? VideoPath { get; set; }
+
         public DateTime SentAt { get; set; } = DateTime.UtcNow;
 
         public bool IsRead { get; set; } = false;
+
+        public bool IsDelivered { get; set; } = false;
     }
 }

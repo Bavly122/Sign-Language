@@ -20,5 +20,7 @@ namespace EnTouch.Domain.Entities
         public string PreferredLanguage { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime? LastSeen { get; set; }
     }
 }
