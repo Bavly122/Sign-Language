@@ -107,9 +107,16 @@ namespace EnTouch.API
                 };
             });
 
+            builder.Services.AddMemoryCache();
+            builder.Services.AddHttpClient();
+            builder.Services.AddScoped<IEmailService, EmailService>();
+            builder.Services.AddScoped<ISmsService, SmsService>();
+
             builder.Services.AddScoped<IAIService, AIService>();
 
             var app = builder.Build();
+
+            app.UseStaticFiles();
 
             app.UseCors("AllowAll");
 
