@@ -51,7 +51,7 @@ namespace EnTouch.API.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task SendPrivateMessage(string receiverId, string content, string messageType)
+        public async Task SendPrivateMessage(string receiverId, string content, string messageType, string? mediaUrl = null)
         {
             try
             {
@@ -65,6 +65,7 @@ namespace EnTouch.API.Hubs
                     ReceiverId = receiverId,
                     Content = content,
                     MessageType = messageType,
+                    VideoPath = mediaUrl,
                     SentAt = DateTime.UtcNow,
                     IsRead = false,
                     IsDelivered = false
@@ -82,8 +83,8 @@ namespace EnTouch.API.Hubs
 
                     await Clients.Client(receiverConnectionId).SendAsync(
                         "ReceivePrivateMessage",
-                        senderId, senderName, content, messageType,
-                        message.VideoPath, message.SentAt, message.Id
+                            senderId, senderName, content, messageType,
+                            mediaUrl,message.SentAt, message.Id
                     );
                 }
 
