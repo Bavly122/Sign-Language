@@ -1,10 +1,13 @@
 ﻿using EnTouch.Domain.Entities;
 using EnTouch.Application.DTOs;
+using EnTouch.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 [ApiController]
@@ -13,13 +16,16 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IConfiguration _configuration;
+    private readonly ApplicationDbContext _context;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ApplicationDbContext context)
     {
         _userManager = userManager;
         _configuration = configuration;
+        _context = context;
     }
 
     [HttpPost("register")]
@@ -44,22 +50,20 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        
-        var token = GenerateJwtToken(user);
+        var accessToken = GenerateJwtToken(user);
+        var refreshToken = await GenerateRefreshToken(user.Id);
 
-        
-        var response = new AuthResponse
+        return Ok(new AuthResponse
         {
-            Token = token,
+            Token = accessToken,
+            RefreshToken = refreshToken,
             Id = user.Id,
             FullName = user.FullName,
             Email = user.Email,
             IsDeaf = user.IsDeaf,
             IsMute = user.IsMute,
             PreferredLanguage = user.PreferredLanguage
-        };
-
-        return Ok(response);
+        });
     }
 
     [HttpPost("login")]
@@ -75,21 +79,71 @@ public class AuthController : ControllerBase
         if (!isPasswordValid)
             return Unauthorized("Invalid credentials");
 
-        var token = GenerateJwtToken(user);
+        var accessToken = GenerateJwtToken(user);
+        var refreshToken = await GenerateRefreshToken(user.Id);
 
-        var response = new AuthResponse
+        return Ok(new AuthResponse
         {
-            Token = token,
+            Token = accessToken,
+            RefreshToken = refreshToken,
             Id = user.Id,
             FullName = user.FullName,
             Email = user.Email,
             IsDeaf = user.IsDeaf,
             IsMute = user.IsMute,
             PreferredLanguage = user.PreferredLanguage
-        };
-
-        return Ok(response);
+        });
     }
+
+    // POST: api/auth/refresh
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshTokenRequest request)
+    {
+        var storedToken = await _context.RefreshTokens
+            .Include(r => r.User)
+            .FirstOrDefaultAsync(r => r.Token == request.RefreshToken);
+
+        if (storedToken == null)
+            return Unauthorized(new { message = "Invalid refresh token" });
+
+        if (storedToken.IsRevoked)
+            return Unauthorized(new { message = "Refresh token has been revoked" });
+
+        if (storedToken.ExpiresAt < DateTime.UtcNow)
+            return Unauthorized(new { message = "Refresh token has expired, please login again" });
+
+        // Revoke old token
+        storedToken.IsRevoked = true;
+        await _context.SaveChangesAsync();
+
+        // Generate new tokens
+        var newAccessToken = GenerateJwtToken(storedToken.User);
+        var newRefreshToken = await GenerateRefreshToken(storedToken.UserId);
+
+        return Ok(new TokenResponse
+        {
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken
+        });
+    }
+
+    // POST: api/auth/logout
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshTokenRequest request)
+    {
+        var storedToken = await _context.RefreshTokens
+            .FirstOrDefaultAsync(r => r.Token == request.RefreshToken);
+
+        if (storedToken != null)
+        {
+            storedToken.IsRevoked = true;
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok(new { message = "Logged out successfully" });
+    }
+
+    // ── Helper Methods ───────────────────────────────────────
 
     private string GenerateJwtToken(ApplicationUser user)
     {
@@ -116,5 +170,34 @@ public class AuthController : ControllerBase
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private async Task<string> GenerateRefreshToken(string userId)
+    {
+        // Revoke any existing active tokens for this user
+        var existingTokens = await _context.RefreshTokens
+            .Where(r => r.UserId == userId && !r.IsRevoked)
+            .ToListAsync();
+
+        foreach (var t in existingTokens)
+            t.IsRevoked = true;
+
+        // Generate new random token
+        var tokenBytes = RandomNumberGenerator.GetBytes(64);
+        var token = Convert.ToBase64String(tokenBytes);
+
+        var refreshToken = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Token = token,
+            ExpiresAt = DateTime.UtcNow.AddDays(30),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _context.RefreshTokens.AddAsync(refreshToken);
+        await _context.SaveChangesAsync();
+
+        return token;
     }
 }

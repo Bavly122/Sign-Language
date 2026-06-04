@@ -29,80 +29,42 @@ namespace EnTouch.API.Controllers
             _onlineUsers = onlineUsers;
         }
 
-        [HttpPost("upload")]
-        public async Task<IActionResult> UploadVideo(IFormFile video)
+        [HttpPost("translate")]
+        public async Task<IActionResult> TranslateVideo(
+                        IFormFile video,
+                        [FromServices] IAIService aiService,
+                        bool flip = false)
         {
             if (video == null || video.Length == 0)
                 return BadRequest("No video uploaded");
 
+            
             var uploadsFolder = Path.Combine(_env.WebRootPath, "videos");
-
             if (!Directory.Exists(uploadsFolder))
                 Directory.CreateDirectory(uploadsFolder);
 
             var fileName = Guid.NewGuid() + Path.GetExtension(video.FileName);
-
             var filePath = Path.Combine(uploadsFolder, fileName);
 
             using (var stream = new FileStream(filePath, FileMode.Create))
-            {
                 await video.CopyToAsync(stream);
-            }
+
+            
+            var rawResult = await aiService.SendVideoToAIAsync(fileName);
+
+            if (rawResult == null)
+                return Ok(new { success = false, message = "Could not recognize sign" });
+
+            var parsed = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(rawResult);
+            var prediction = parsed.GetProperty("prediction").GetString();
+            var confidence = Math.Round(parsed.GetProperty("confidence").GetDouble() * 100, 2);
 
             return Ok(new
             {
+                success = true,
+                prediction = prediction,
+                confidence = $"{confidence}%",
                 videoPath = fileName
-            });
-        }
-        [HttpPost("process")]
-        public async Task<IActionResult> ProcessVideo(string receiverId, string videoPath)
-        {
-            var senderId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-            // Fake AI
-            await Task.Delay(2000);
-
-            var resultText = "Hello how are you";
-
-            var message = new Message
-            {
-                Id = Guid.NewGuid(),
-                SenderId = senderId,
-                ReceiverId = receiverId,
-                Content = resultText,
-                VideoPath = videoPath,
-                MessageType = "Sign",
-                SentAt = DateTime.UtcNow,
-                IsRead = false,
-                IsDelivered = false
-            };
-
-            _context.Messages.Add(message);
-            await _context.SaveChangesAsync();
-
-            var receiverConnection = _onlineUsers.GetConnectionId(receiverId);
-
-            if (!string.IsNullOrEmpty(receiverConnection))
-            {
-                message.IsDelivered = true;
-                await _context.SaveChangesAsync();
-
-                await _hub.Clients.Client(receiverConnection).SendAsync(
-                    "ReceivePrivateMessage",
-                    senderId,
-                    resultText,
-                    "Sign",
-                    videoPath,
-                    message.SentAt,
-                    message.Id
-                );
-            }
-
-            return Ok(new
-            {
-                text = resultText,
-                video = videoPath,
-                messageId = message.Id
             });
         }
     }

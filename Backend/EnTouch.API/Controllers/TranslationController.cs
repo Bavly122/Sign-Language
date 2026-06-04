@@ -30,34 +30,28 @@ namespace EnTouch.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            using var scope = _scopeFactory.CreateScope();
+            var aiService = scope.ServiceProvider.GetRequiredService<IAIService>();
+            var videoFileName = await aiService.TextToSignAsync(dto.InputText!);
+            if (videoFileName == null)
+                return Ok(new { success = false, message = "Could not generate sign video" });
             var translation = new Translation
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
-                Type = dto.Type,
                 InputText = dto.InputText,
-                InputVideoPath = dto.InputVideoPath,
-                Status = TranslationStatus.Pending,
+                OutputVideoPath = videoFileName,
+                Status = TranslationStatus.Completed,
                 CreatedAt = DateTime.UtcNow
             };
-
             await _context.Translations.AddAsync(translation);
             await _context.SaveChangesAsync();
-
-            var translationId = translation.Id;
-
-            
-            _ = Task.Run(async () =>
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var aiService = scope.ServiceProvider.GetRequiredService<IAIService>();
-                await aiService.ProcessTranslationAsync(translationId);
-            });
-
             return Ok(new
             {
-                translation.Id,
-                Status = translation.Status.ToString()
+                success = true,
+                translationId = translation.Id,
+                inputText = dto.InputText,
+                outputVideoUrl = $"/videos/{videoFileName}"
             });
         }
 
