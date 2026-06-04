@@ -9,10 +9,11 @@ namespace EnTouch.Application.DTOs
 {
     public class CreateTranslationDto
     {
-        public TranslationType Type { get; set; }
+        
+
 
         public string? InputText { get; set; }
 
-        public string? InputVideoPath { get; set; }
+        
     }
 }
