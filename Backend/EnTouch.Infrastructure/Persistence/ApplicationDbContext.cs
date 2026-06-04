@@ -23,6 +23,10 @@ namespace EnTouch.Infrastructure.Persistence
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<DictionarySign> DictionarySigns { get; set; }
         public DbSet<UserSettings> UserSettings { get; set; }
+        public DbSet<Post> Posts { get; set; }
+        public DbSet<PostLike> PostLikes { get; set; }
+        public DbSet<PostComment> PostComments { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -52,6 +56,42 @@ namespace EnTouch.Infrastructure.Persistence
                 .WithMany()
                 .HasForeignKey(f => f.AddresseeId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Post relationships
+            builder.Entity<Post>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<PostLike>()
+                .HasOne(l => l.Post)
+                .WithMany(p => p.Likes)
+                .HasForeignKey(l => l.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<PostLike>()
+                .HasOne(l => l.User)
+                .WithMany()
+                .HasForeignKey(l => l.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.Entity<PostComment>()
+                .HasOne(c => c.Post)
+                .WithMany(p => p.Comments)
+                .HasForeignKey(c => c.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<PostComment>()
+                .HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+            builder.Entity<RefreshToken>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
