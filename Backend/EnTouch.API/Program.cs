@@ -116,6 +116,8 @@ namespace EnTouch.API
 
             var app = builder.Build();
 
+            app.UseHttpsRedirection();
+
             app.UseStaticFiles();
 
             app.UseCors("AllowAll");
@@ -126,7 +128,6 @@ namespace EnTouch.API
                 app.UseSwaggerUI();
            // }
 
-            app.UseHttpsRedirection();
 
             app.UseAuthentication();
             app.UseAuthorization();
