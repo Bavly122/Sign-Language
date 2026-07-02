@@ -12,6 +12,7 @@ namespace EnTouch.Application.DTOs
         public string Type { get; set; }
         public string? InputText { get; set; }
         public string? OutputText { get; set; }
+        public string? OutputVideoPath { get; set; }
         public string Status { get; set; }
         public DateTime CreatedAt { get; set; }
     }
