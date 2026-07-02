@@ -3,6 +3,7 @@ using EnTouch.Domain.Entities;
 using EnTouch.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace EnTouch.API.Hubs
@@ -12,11 +13,13 @@ namespace EnTouch.API.Hubs
     {
         private readonly ApplicationDbContext _context;
         private readonly OnlineUsersService _onlineUsers;
+        private readonly IFirebaseNotificationService _notificationService;
 
-        public ChatHub(ApplicationDbContext context, OnlineUsersService onlineUsers)
+        public ChatHub(ApplicationDbContext context, OnlineUsersService onlineUsers, IFirebaseNotificationService notificationService)
         {
             _context = context;
             _onlineUsers = onlineUsers;
+            _notificationService = notificationService;
         }
 
         public override async Task OnConnectedAsync()
@@ -58,12 +61,15 @@ namespace EnTouch.API.Hubs
                 var senderId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var senderName = Context.User?.FindFirst(ClaimTypes.Name)?.Value;
 
+                if (string.IsNullOrEmpty(senderId))
+                    throw new HubException("Unauthorized");
+
                 var message = new Message
                 {
                     Id = Guid.NewGuid(),
                     SenderId = senderId,
                     ReceiverId = receiverId,
-                    Content = content,
+                    Content = content ?? "",
                     MessageType = messageType,
                     VideoPath = mediaUrl,
                     SentAt = DateTime.UtcNow,
@@ -74,6 +80,22 @@ namespace EnTouch.API.Hubs
                 _context.Messages.Add(message);
                 await _context.SaveChangesAsync();
 
+                var device = await _context.UserDevices
+                            .Where(d => d.UserId == receiverId)
+                            .OrderByDescending(d => d.CreatedAt)
+                            .FirstOrDefaultAsync();
+
+                if (device != null)
+                {
+                    await _notificationService.SendMessageNotificationAsync(
+                        device.FcmToken,
+                        senderName ?? "New message",
+                        content,
+                        messageType,
+                        senderId,
+                        message.Id.ToString());
+                }
+
                 var receiverConnectionId = _onlineUsers.GetConnectionId(receiverId);
 
                 if (!string.IsNullOrEmpty(receiverConnectionId))
@@ -83,8 +105,8 @@ namespace EnTouch.API.Hubs
 
                     await Clients.Client(receiverConnectionId).SendAsync(
                         "ReceivePrivateMessage",
-                            senderId, senderName, content, messageType,
-                            mediaUrl,message.SentAt, message.Id
+                        senderId, senderName, message.Content, messageType, 
+                        mediaUrl, message.SentAt, message.Id
                     );
                 }
 
@@ -95,6 +117,7 @@ namespace EnTouch.API.Hubs
                 throw new HubException($"{ex.Message} >> {ex.InnerException?.Message}");
             }
         }
+
         public async Task Typing(string receiverId)
         {
             var senderId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -108,6 +131,7 @@ namespace EnTouch.API.Hubs
                     .SendAsync("UserTyping", senderId, senderName);
             }
         }
+
         public async Task MarkMessageAsRead(Guid messageId)
         {
             var message = await _context.Messages.FindAsync(messageId);
