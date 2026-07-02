@@ -13,6 +13,8 @@ namespace EnTouch.API
     {
         public static void Main(string[] args)
         {
+            Xabe.FFmpeg.FFmpeg.SetExecutablesPath(
+            Path.Combine(AppContext.BaseDirectory, "ffmpeg"));
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -111,7 +113,7 @@ namespace EnTouch.API
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<IEmailService, EmailService>();
             builder.Services.AddScoped<ISmsService, SmsService>();
-
+            builder.Services.AddSingleton<IFirebaseNotificationService, FirebaseNotificationService>();
             builder.Services.AddScoped<IAIService, AIService>();
 
             var app = builder.Build();
