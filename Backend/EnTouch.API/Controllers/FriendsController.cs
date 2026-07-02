@@ -59,8 +59,7 @@ namespace EnTouch.API.Controllers
             existingFriendIds.Add(userId);
 
             var suggestions = await _context.Users
-                .Where(u => !existingFriendIds.Contains(u.Id) &&
-                            (u.IsDeaf == currentUser.IsDeaf || u.IsMute == currentUser.IsMute))
+                .Where(u => !existingFriendIds.Contains(u.Id))
                 .Take(10)
                 .Select(u => new FriendSuggestionDto
                 {
@@ -184,6 +183,35 @@ namespace EnTouch.API.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Friend removed" });
+        }
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchFriends([FromQuery] string q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+                return BadRequest("Search query is required");
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var friends = await _context.Friendships
+                .Include(f => f.Requester)
+                .Include(f => f.Addressee)
+                .Where(f => f.Status == "Accepted" &&
+                            (f.RequesterId == userId || f.AddresseeId == userId) &&
+                            (f.RequesterId == userId
+                                ? f.Addressee.FullName.Contains(q)
+                                : f.Requester.FullName.Contains(q)))
+                .Select(f => new FriendDto
+                {
+                    Id = f.RequesterId == userId ? f.AddresseeId : f.RequesterId,
+                    FullName = f.RequesterId == userId ? f.Addressee.FullName : f.Requester.FullName,
+                    ProfileImageUrl = f.RequesterId == userId ? f.Addressee.ProfileImageUrl : f.Requester.ProfileImageUrl,
+                    IsDeaf = f.RequesterId == userId ? f.Addressee.IsDeaf : f.Requester.IsDeaf,
+                    IsMute = f.RequesterId == userId ? f.Addressee.IsMute : f.Requester.IsMute,
+                    FriendshipStatus = "Accepted"
+                })
+                .ToListAsync();
+
+            return Ok(friends);
         }
     }
 }

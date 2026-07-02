@@ -5,6 +5,7 @@ using EnTouch.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 
 namespace EnTouch.API.Controllers
@@ -16,13 +17,22 @@ namespace EnTouch.API.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IWebHostEnvironment _env;
+        private readonly IConfiguration _configuration;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public TranslationController(
             ApplicationDbContext context,
-            IServiceScopeFactory scopeFactory)
+            IServiceScopeFactory scopeFactory,
+            IWebHostEnvironment env,
+            IConfiguration configuration,
+            IHttpClientFactory httpClientFactory)
         {
             _context = context;
             _scopeFactory = scopeFactory;
+            _env = env;
+            _configuration = configuration;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpPost("create")]
@@ -69,12 +79,83 @@ namespace EnTouch.API.Controllers
                     Type = t.Type.ToString(),
                     InputText = t.InputText,
                     OutputText = t.OutputText,
+                    OutputVideoPath = t.OutputVideoPath,
                     Status = t.Status.ToString(),
                     CreatedAt = t.CreatedAt
                 })
                 .ToListAsync();
 
             return Ok(translations);
+        }
+        [HttpPost("Transcript")]
+        public async Task<IActionResult> VideoToText(IFormFile videoFile)
+        {
+            if (videoFile == null || videoFile.Length == 0)
+                return BadRequest(new { message = "No video uploaded" });
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var apiKey = _configuration["OpenAI:ApiKey"];
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+            string? transcribedText = null;
+
+            try
+            {
+                using var formData = new MultipartFormDataContent();
+                var fileBytes = new byte[videoFile.Length];
+                using var ms = new MemoryStream();
+                await videoFile.CopyToAsync(ms);
+                var fileContent = new ByteArrayContent(ms.ToArray());
+                fileContent.Headers.ContentType =
+                    new System.Net.Http.Headers.MediaTypeHeaderValue(videoFile.ContentType);
+                formData.Add(fileContent, "file", videoFile.FileName);
+                formData.Add(new StringContent("whisper-large-v3"), "model");
+                formData.Add(new StringContent("en"), "language");
+
+                var whisperResponse = await httpClient.PostAsync(
+                    "https://api.groq.com/openai/v1/audio/transcriptions", formData);
+
+                if (whisperResponse.IsSuccessStatusCode)
+                {
+                    var whisperJson = await whisperResponse.Content.ReadAsStringAsync();
+                    var whisperResult = System.Text.Json.JsonSerializer
+                        .Deserialize<System.Text.Json.JsonElement>(whisperJson);
+                    transcribedText = whisperResult.GetProperty("text").GetString();
+                }
+                else
+                {
+                    var errorBody = await whisperResponse.Content.ReadAsStringAsync();
+                    return Ok(new { success = false, message = errorBody });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { success = false, message = ex.Message });
+            }
+
+            if (transcribedText == null)
+                return Ok(new { success = false, message = "Could not transcribe audio" });
+
+            var translation = new Translation
+            {
+                Id = Guid.NewGuid(),
+                UserId = currentUserId,
+                Type = TranslationType.SignToText,
+                OutputText = transcribedText,
+                Status = TranslationStatus.Completed,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.Translations.AddAsync(translation);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                translationId = translation.Id,
+                transcribedText = transcribedText
+            });
         }
     }
 }

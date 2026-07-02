@@ -38,27 +38,20 @@ namespace EnTouch.API.Controllers
             if (video == null || video.Length == 0)
                 return BadRequest("No video uploaded");
 
-            
             var uploadsFolder = Path.Combine(_env.WebRootPath, "videos");
             if (!Directory.Exists(uploadsFolder))
                 Directory.CreateDirectory(uploadsFolder);
-
             var fileName = Guid.NewGuid() + Path.GetExtension(video.FileName);
             var filePath = Path.Combine(uploadsFolder, fileName);
-
             using (var stream = new FileStream(filePath, FileMode.Create))
                 await video.CopyToAsync(stream);
 
-            
             var rawResult = await aiService.SendVideoToAIAsync(fileName);
-
             if (rawResult == null)
                 return Ok(new { success = false, message = "Could not recognize sign" });
-
             var parsed = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(rawResult);
             var prediction = parsed.GetProperty("prediction").GetString();
             var confidence = Math.Round(parsed.GetProperty("confidence").GetDouble() * 100, 2);
-
             return Ok(new
             {
                 success = true,
